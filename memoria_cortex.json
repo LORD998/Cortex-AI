@@ -1,0 +1,139 @@
+{
+    "fatos": [
+        {
+            "texto": "Utilizador quer que a Cortex pense antes de responder",
+            "data": "2026-07-12 13:19"
+        },
+        {
+            "texto": "Utilizador gosta de ser saudado com \"boas manó\"",
+            "data": "2026-07-12 14:40"
+        }
+    ],
+    "aprendizagens": [
+        {
+            "topico": "Idiomas",
+            "conteudo": "Utilizador tem interesse em aprender alemão.",
+            "data": "2026-07-12 16:43"
+        },
+        {
+            "topico": "nua",
+            "conteudo": "O termo 'nua' em português significa 'naked' (desnudo) ou pode ser usado como adjetivo para descrever algo que não tem cobertura.",
+            "data": "2026-07-12 20:25"
+        },
+        {
+            "topico": "Inglês Básico",
+            "conteudo": "Palavra 1: Hello\n Pronúncia: /ˈhɛloʊ/\n Definição: Saudação informal\n Exemplo: \"Hello, how are you?\" (Oi, como estás?)",
+            "data": "2026-07-12 20:36"
+        }
+    ],
+    "historico_apps": [
+        {
+            "app": "VSCode",
+            "data": "2026-07-12 13:27"
+        },
+        {
+            "app": "Roblx",
+            "data": "2026-07-12 13:44"
+        },
+        {
+            "app": "Roblox",
+            "data": "2026-07-12 13:45"
+        },
+        {
+            "app": "Roblox",
+            "data": "2026-07-12 13:45"
+        },
+        {
+            "app": "steam",
+            "data": "2026-07-12 13:47"
+        },
+        {
+            "app": "RO",
+            "data": "2026-07-12 13:53"
+        },
+        {
+            "app": "Roblox",
+            "data": "2026-07-12 13:54"
+        },
+        {
+            "app": "Spotify",
+            "data": "2026-07-12 13:54"
+        },
+        {
+            "app": "Spotify",
+            "data": "2026-07-12 13:55"
+        },
+        {
+            "app": "Spotify",
+            "data": "2026-07-12 13:56"
+        },
+        {
+            "app": "Roblox",
+            "data": "2026-07-12 14:08"
+        },
+        {
+            "app": "After Effects",
+            "data": "2026-07-12 14:15"
+        },
+        {
+            "app": "After Effects",
+            "data": "2026-07-12 14:15"
+        },
+        {
+            "app": "Roblox",
+            "data": "2026-07-12 14:55"
+        },
+        {
+            "app": "Roblox",
+            "data": "2026-07-12 14:55"
+        },
+        {
+            "app": "Roblox",
+            "data": "2026-07-12 14:57"
+        },
+        {
+            "app": "Spotify",
+            "data": "2026-07-12 15:22"
+        },
+        {
+            "app": "Roblox",
+            "data": "2026-07-12 16:29"
+        },
+        {
+            "app": "Roblox",
+            "data": "2026-07-12 16:30"
+        },
+        {
+            "app": "Bloco de Notas",
+            "data": "2026-07-12 17:21"
+        },
+        {
+            "app": "Spotify",
+            "data": "2026-07-12 18:40"
+        },
+        {
+            "app": "Spotify",
+            "data": "2026-07-12 19:35"
+        },
+        {
+            "app": "Notepad",
+            "data": "2026-07-12 19:50"
+        },
+        {
+            "app": "Roblox",
+            "data": "2026-07-12 20:00"
+        },
+        {
+            "app": "spotify",
+            "data": "2026-07-12 21:10"
+        },
+        {
+            "app": "Spotify",
+            "data": "2026-07-12 23:49"
+        },
+        {
+            "app": "bloco de notas",
+            "data": "2026-07-13 00:24"
+        }
+    ]
+}

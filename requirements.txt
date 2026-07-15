@@ -1,0 +1,26 @@
+# Cortex Dependencies
+colorama==0.4.6
+requests==2.31.0
+gTTS
+PyQt6
+keyboard
+SpeechRecognition
+sounddevice
+soundfile
+numpy
+playsound==1.2.2
+Pillow
+edge-tts
+pyautogui
+pygetwindow
+pyperclip
+pandas
+matplotlib
+seaborn
+openpyxl
+beautifulsoup4
+playwright
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
+shopifyapi
