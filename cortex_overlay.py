@@ -46,32 +46,64 @@ class SubtitleOverlay(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         
         screen_geometry = QApplication.primaryScreen().geometry()
-        w = int(screen_geometry.width() * 0.8)
-        h = 100
+        w = int(screen_geometry.width() * 0.75)
+        h = 160
         center_x = screen_geometry.width() // 2
-        center_y = screen_geometry.height() - 300
+        center_y = screen_geometry.height() - 250
         
         self.setGeometry(center_x - (w // 2), center_y - (h // 2), w, h)
         
         self.label = QLabel("", self)
-        self.label.setStyleSheet("color: white; font-size: 26px; font-weight: bold; background-color: rgba(0, 0, 0, 150); padding: 10px; border-radius: 10px;")
+        self.label.setWordWrap(True)
+        self.label.setStyleSheet("""
+            QLabel {
+                color: #F8F9FA;
+                font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+                font-size: 32px;
+                font-weight: bold;
+                background-color: rgba(15, 15, 20, 210);
+                padding: 20px 30px;
+                border-radius: 25px;
+                border: 2px solid rgba(255, 255, 255, 40);
+            }
+        """)
         self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.label.setGeometry(0, 0, w, h)
-        self.label.hide()
+        self.label.setGeometry(20, 20, w - 40, h - 40)
+        
+        from PyQt6.QtWidgets import QGraphicsDropShadowEffect
+        shadow = QGraphicsDropShadowEffect(self)
+        shadow.setBlurRadius(30)
+        shadow.setXOffset(0)
+        shadow.setYOffset(12)
+        shadow.setColor(QColor(0, 0, 0, 180))
+        self.label.setGraphicsEffect(shadow)
+        
+        self.setWindowOpacity(0.0)
+        
+        from PyQt6.QtCore import QPropertyAnimation
+        self.fade_anim = QPropertyAnimation(self, b"windowOpacity")
+        self.fade_anim.setDuration(400)
         
         self.subtitle_changed.connect(self.update_text)
         
         self.clear_timer = QTimer()
         self.clear_timer.timeout.connect(lambda: self.update_text(""))
         self.clear_timer.setSingleShot(True)
+        self.show()
 
     def update_text(self, text):
         if text:
             self.label.setText(text)
-            self.label.show()
-            self.clear_timer.start(10000)
+            self.fade_anim.stop()
+            self.fade_anim.setStartValue(self.windowOpacity())
+            self.fade_anim.setEndValue(1.0)
+            self.fade_anim.start()
+            self.clear_timer.start(8000)
         else:
-            self.label.hide()
+            self.fade_anim.stop()
+            self.fade_anim.setStartValue(self.windowOpacity())
+            self.fade_anim.setEndValue(0.0)
+            self.fade_anim.start()
 
 
 class EdgeGlowOverlay(QWidget):
