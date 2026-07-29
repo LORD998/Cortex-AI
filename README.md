@@ -1,159 +1,121 @@
 # Cortex AI
 
-Assistente pessoal local para Windows, com cérebro Ollama, voz offline, visão,
-memória e ferramentas reais para interagir com ficheiros, aplicações e serviços.
+A local, privacy-first AI assistant for Windows. Powered by an Ollama brain, offline voice synthesis, computer vision, local memory, and a real tool-use agentic loop to interact with files, applications, and services.
 
-## O que já funciona
+## 🚀 Overview
 
-- Conversa local com `qwen3:8b` através do Ollama.
-- Ciclo de agente multi-etapas: pensa, usa uma ferramenta, verifica o resultado
-  e continua até concluir ou atingir o limite seguro.
-- Roteamento contextual: o modelo recebe apenas as ferramentas relevantes para
-  o pedido, em vez das 55 ferramentas ao mesmo tempo.
-- Voz para texto offline com `faster-whisper`.
-- Voz neural feminina brasileira `pf_dora` com Kokoro. Piper continua disponível
-  como alternativa rápida e a voz SAPI do Windows fica como último recurso.
-- Raciocínio automático: pedidos simples usam o modo rápido; análise,
-  planeamento e tarefas complexas ativam pensamento aprofundado.
-- Tradução de chamadas com deteção automática do idioma, tradução local pelo
-  Ollama e saída configurável para outro idioma.
-- Visão do ecrã com `qwen3-vl:8b`.
-- Memória local em `memoria_cortex.json`.
-- Gmail: listar, ler, preparar rascunhos, preparar respostas e enviar após
-  confirmação explícita.
-- Ferramentas de ficheiros, janelas, sistema, teclado, rato, pesquisa e dados.
+Cortex AI is built to be a truly local personal assistant. It combines cutting-edge local LLMs (like `qwen3:8b`) with a multi-step reasoning agent architecture. It can think, choose contextual tools, execute them, and verify the results—all while keeping your data strictly on your machine.
 
-## Privacidade real
+### Key Features
+- **Local Conversational AI**: Powered by `qwen3:8b` via Ollama for fast, uncensored, and private interactions.
+- **Multi-Step Agent Loop**: The assistant reasons through tasks, uses tools, checks outcomes, and iterates until the goal is achieved.
+- **Contextual Tool Routing**: Dynamically supplies only the relevant tools to the LLM out of a pool of 55+ available actions, saving context window and improving accuracy.
+- **Offline Speech-to-Text & Text-to-Speech**: Uses `faster-whisper` for incredibly fast and accurate transcription, and Kokoro/Piper for high-quality, natural-sounding offline neural voices.
+- **Computer Vision**: Leverages `qwen3-vl:8b` to see and analyze your screen.
+- **Long-term Memory**: Persists conversational context and user preferences locally in a JSON store.
+- **Real-Time Call Translation**: Auto-detects languages, translates locally, and outputs to a virtual audio cable for seamless use in Discord or Zoom.
+- **Deep System Integration**: Features tools for file management, window control, keyboard/mouse automation, and optional internet integrations (e.g., Gmail, web search).
 
-O cérebro, o reconhecimento de voz, a tradução e a síntese de voz são locais.
-Depois do primeiro download do modelo Whisper, estas funções não enviam áudio
-para Google, Microsoft Edge TTS ou serviços de tradução.
+## 🧠 Architecture: How it Works
 
-Funções que naturalmente dependem da Internet — Gmail, pesquisa web, emprego,
-Shopify e abertura de páginas — continuam a usar a Internet apenas quando forem
-pedidas.
+Cortex AI is structured around a modular agentic framework:
 
-## Segurança
+1. **Input Processing**: The `voice_manager` handles continuous listening. When a user speaks, the audio is processed locally using `faster-whisper`.
+2. **Context & Routing (`tool_router.py`)**: Before hitting the main LLM, a fast lightweight intent classifier determines the context of the user's request. It selects only the necessary tools, passing them to the main orchestrator.
+3. **Reasoning Engine (`orchestrator.py`)**: 
+   - **Fast Mode**: For simple queries, it directly answers.
+   - **Deep Reasoning Mode**: For complex tasks, it enters a loop. It analyzes the problem, formulates a plan, executes a tool (like reading a file or searching the web), evaluates the tool's output, and decides if it needs to take another step.
+4. **Execution & Safeguards**: Any action that modifies the system (deleting files, sending emails, running terminal commands) is intercepted and requires explicit user confirmation.
+5. **Output Generation (`local_speech.py`)**: The generated text is passed to the local TTS engine (Kokoro or Piper) for instant, natural playback.
 
-A Cortex pede confirmação antes de:
+## 🔒 Privacy & Security First
 
-- enviar e-mail;
-- apagar, mover, renomear, copiar ou sobrescrever ficheiros;
-- executar comandos no terminal;
-- instalar programas;
-- fechar janelas;
-- terminar processos, limpar temporários, reiniciar, suspender ou desligar.
+- **100% Local Inference**: Once models are downloaded, core functions (brain, voice recognition, translation, TTS) require **no internet connection**. No audio or text is sent to the cloud.
+- **Explicit Consents**: The system will explicitly ask for permission before performing destructive or external actions (e.g., sending emails, deleting files, installing software, closing applications).
 
-Procurar duplicados apenas cria um relatório; já não apaga ficheiros. A extração
-de ZIP também bloqueia caminhos que tentem escrever fora da pasta escolhida.
+## 🛠️ Installation & Setup
 
-## Requisitos
+### Prerequisites
+- Windows 10 or 11
+- Python 3.11+
+- [Ollama](https://ollama.ai/) installed locally
+- A microphone
+- (Optional but recommended) A dedicated GPU for faster inference
 
-- Windows 10 ou 11;
-- Python 3.11 ou superior;
-- Ollama;
-- microfone;
-- GPU recomendada, mas não obrigatória.
+### Setup Guide
 
-## Instalação
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/your-username/cortex-ai.git
+   cd cortex-ai
+   ```
 
-```powershell
-python -m pip install -r requirements.txt
-python scripts/setup_local_voice.py
-ollama pull qwen3:8b
-ollama pull qwen3-vl:8b
-```
+2. **Install dependencies**
+   ```bash
+   python -m pip install -r requirements.txt
+   ```
 
-O script descarrega a voz portuguesa Piper e as vozes Kokoro. O
-`faster-whisper` descarrega o modelo `small` na primeira utilização. Depois,
-fica tudo guardado localmente. Na máquina atual, o Whisper já foi validado na RTX
-e a voz é pré-carregada em segundo plano ao iniciar.
+3. **Download Local Voice Models**
+   ```bash
+   python scripts/setup_local_voice.py
+   ```
 
-## Iniciar
+4. **Pull Ollama Models**
+   ```bash
+   ollama pull qwen3:8b
+   ollama pull qwen3-vl:8b
+   ```
 
-```powershell
+## 💻 Usage
+
+To start Cortex AI:
+```bash
 python cortex_overlay.py
 ```
+*(Alternatively, use `start_cortex_hidden.vbs` to run it silently in the background.)*
 
-Também podes usar `start_cortex_hidden.vbs` para iniciar sem uma consola visível.
+**Hotkeys & Commands:**
+- Hold `ALT` to speak, release to send the command.
+- Press `0` to toggle the real-time call translator.
+- Say *"English teacher mode"* to start an interactive learning session.
 
-- Mantém `ALT` premido para falar e solta para enviar.
-- Pressiona `0` para ligar ou desligar o tradutor de chamada.
-- Diz “modo professora de inglês” para iniciar uma aula.
-- Diz “sair da aula” para voltar ao modo normal.
+## ⚙️ Configuration
 
-## Configuração
-
-Copia `.env.example` para `.env` apenas se quiseres mudar os valores padrão:
-
-```powershell
-Copy-Item .env.example .env
-```
-
-Opções principais:
+Copy `.env.example` to `.env` to customize settings:
 
 ```dotenv
 CORTEX_MODEL=qwen3:8b
 CORTEX_CONTEXT_SIZE=8192
 CORTEX_REASONING=auto
 CORTEX_WHISPER_MODEL=small
-CORTEX_WHISPER_DEVICE=auto
 CORTEX_TTS_ENGINE=kokoro
-CORTEX_TTS_VOICE_PT=pf_dora
 CORTEX_TTS_SPEED=1.0
-CORTEX_TRANSLATOR_TARGET=en
 ```
 
-`CORTEX_REASONING=auto` dá prioridade à velocidade e ativa raciocínio profundo
-quando deteta análise, planeamento ou vários passos. Usa `on` para o manter
-sempre ativo ou `off` para máxima rapidez.
+- `CORTEX_REASONING=auto`: Automatically switches to deep reasoning for multi-step tasks. Can be set to `on` or `off`.
+- `CORTEX_WHISPER_MODEL`: Change to `medium` for better multi-language recognition (requires more VRAM).
 
-`CORTEX_TTS_SPEED` aceita valores de `0.75` a `1.25`. O padrão `1.0` preserva a
-cadência natural da voz feminina. Para voltar à voz portuguesa masculina mais
-rápida, usa `CORTEX_TTS_ENGINE=piper`.
+## 🧪 Testing
 
-Para melhorar o reconhecimento de vários idiomas, podes usar
-`CORTEX_WHISPER_MODEL=medium`, com maior consumo de memória e tempo.
+The project includes an extensive test suite. Manual tests (involving hardware like the microphone) are separated from automated logic tests.
 
-O idioma de saída do tradutor usa códigos como `en`, `de`, `es`, `fr`, `it`,
-`ru`, `ja` ou `zh`. Para enviar a voz traduzida a Discord/Zoom, instala um cabo
-de áudio virtual que apareça como `CABLE Input`.
-
-## Gmail
-
-O Gmail é opcional. Define o caminho do ficheiro OAuth autorizado:
-
-```dotenv
-CORTEX_GMAIL_CREDENTIALS=C:\caminho\seguro\gmail_credentials.json
-```
-
-A Cortex prefere criar rascunhos. O envio real continua bloqueado até dizeres
-“confirmo”.
-
-## Testes
-
-```powershell
+```bash
+# Run logic tests
 python -m unittest discover -s tests -v
-python -m compileall -q core modules
 ```
 
-Os testes que captam microfone ou chamam serviços reais foram movidos para
-`scripts/manual_test_*.py`, para não ativarem hardware durante testes automáticos.
-
-## Estrutura
-
+## 📁 Project Structure
 ```text
 core/
-  config.py          configuração central
-  nlp_engine.py      cliente Ollama
-  orchestrator.py    agente, ferramentas e confirmações
-  tool_router.py     seleção contextual de ferramentas
+  ├── config.py          # Central configuration management
+  ├── nlp_engine.py      # Ollama client & LLM interfacing
+  ├── orchestrator.py    # Main agent loop and tool execution
+  └── tool_router.py     # Contextual tool selection
 modules/
-  local_speech.py    Whisper, Piper, Kokoro e SAPI locais
-  voice_manager.py   microfone e voz da assistente
-  translator_manager.py
-  email_manager.py
-  ...
-tests/
-  test_core.py
+  ├── local_speech.py    # Whisper, Piper, and Kokoro integrations
+  ├── voice_manager.py   # Microphone and audio processing
+  ├── email_manager.py   # Gmail integration with draft-first safety
+  └── ...
+tests/                 # Automated test suite
+scripts/               # Setup and manual hardware testing scripts
 ```
