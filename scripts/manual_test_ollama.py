@@ -1,3 +1,5 @@
+"""Teste manual da API do Ollama; executar diretamente quando necessário."""
+
 import requests
 
 payload = {

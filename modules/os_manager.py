@@ -25,6 +25,7 @@ class OSManager:
             # Media
             "spotify": "spotify", "discord": "discord",
             "vlc": "vlc", "media player": "wmplayer",
+            "whatsapp": "whatsapp:",
             # Dev & Jogos
             "vscode": "code", "visual studio code": "code", "code": "code",
             "steam": "steam", "roblox": "roblox-player:",

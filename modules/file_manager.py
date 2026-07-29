@@ -27,9 +27,10 @@ class FileManager:
         except Exception as e:
             return f"Ocorreu um erro ao tentar listar os ficheiros: {str(e)}"
 
-    def procurar_ficheiros(self, nome: str, diretorio_base: str = "C:/Users/lordg/Desktop"):
+    def procurar_ficheiros(self, nome: str, diretorio_base: str = None):
         """Procura ficheiros recursivamente a partir de um diretório base."""
         try:
+            diretorio_base = diretorio_base or os.path.join(os.path.expanduser("~"), "Desktop")
             padrao = os.path.join(diretorio_base, "**", f"*{nome}*")
             resultados = glob.glob(padrao, recursive=True)
             if not resultados:
@@ -208,13 +209,17 @@ class FileManager:
     def descompactar_zip(self, ficheiro: str, destino: str = None):
         try:
             import zipfile
-            import os
             if not os.path.exists(ficheiro):
                 return f"O ficheiro '{ficheiro}' não existe."
             if not destino:
                 destino = os.path.splitext(ficheiro)[0]
             os.makedirs(destino, exist_ok=True)
             with zipfile.ZipFile(ficheiro, 'r') as zip_ref:
+                destino_real = os.path.realpath(destino)
+                for member in zip_ref.infolist():
+                    member_path = os.path.realpath(os.path.join(destino, member.filename))
+                    if os.path.commonpath([destino_real, member_path]) != destino_real:
+                        return f"Erro: o ZIP contém um caminho inseguro: {member.filename}"
                 zip_ref.extractall(destino)
             return f"Ficheiro ZIP extraído com sucesso para: '{destino}'."
         except Exception as e:
@@ -237,31 +242,39 @@ class FileManager:
 
     def encontrar_duplicados(self, pasta: str):
         try:
-            import os
             import hashlib
             if not os.path.exists(pasta):
                 return f"A pasta '{pasta}' não existe."
                 
             hashes = {}
-            duplicados = []
+            grupos = {}
             
             for root, dirs, files in os.walk(pasta):
                 for nome in files:
                     caminho = os.path.join(root, nome)
                     try:
+                        digest = hashlib.sha256()
                         with open(caminho, 'rb') as f:
-                            file_hash = hashlib.md5(f.read()).hexdigest()
+                            for chunk in iter(lambda: f.read(1024 * 1024), b''):
+                                digest.update(chunk)
+                        file_hash = digest.hexdigest()
                         if file_hash in hashes:
-                            duplicados.append(caminho)
-                            os.remove(caminho)
+                            grupos.setdefault(file_hash, [hashes[file_hash]]).append(caminho)
                         else:
                             hashes[file_hash] = caminho
-                    except:
+                    except (PermissionError, OSError):
                         pass
                         
-            if not duplicados:
+            if not grupos:
                 return "Não foram encontrados ficheiros duplicados."
-            return f"Limpeza concluída! Apagados {len(duplicados)} ficheiros duplicados."
+            linhas = []
+            for indice, caminhos in enumerate(grupos.values(), start=1):
+                linhas.append(f"Grupo {indice}:")
+                linhas.extend(f"- {caminho}" for caminho in caminhos)
+            return (
+                f"Encontrei {len(grupos)} grupos de duplicados. "
+                "Nenhum ficheiro foi apagado.\n" + "\n".join(linhas[:100])
+            )
         except Exception as e:
             return f"Erro ao procurar duplicados: {str(e)}"
 
@@ -288,18 +301,21 @@ class FileManager:
             
             if ext == "pdf":
                 try:
-                    import PyPDF2
+                    from pypdf import PdfReader
                     with open(caminho, "rb") as f:
-                        reader = PyPDF2.PdfReader(f)
+                        reader = PdfReader(f)
                         texto = "\n".join([page.extract_text() for page in reader.pages if page.extract_text()])
                 except ImportError:
-                    return "A biblioteca PyPDF2 não está instalada. Instale com: pip install PyPDF2"
+                    return "A biblioteca pypdf não está instalada. Instale as dependências do projeto."
             elif ext in ["docx", "doc"]:
+                if ext == "doc":
+                    return "O formato DOC antigo não é suportado localmente. Converte-o para DOCX."
                 try:
-                    import docx2txt
-                    texto = docx2txt.process(caminho)
+                    from docx import Document
+                    documento = Document(caminho)
+                    texto = "\n".join(paragrafo.text for paragrafo in documento.paragraphs)
                 except ImportError:
-                    return "A biblioteca docx2txt não está instalada. Instale com: pip install docx2txt"
+                    return "A biblioteca python-docx não está instalada. Instale as dependências do projeto."
             else:
                 return "Formato não suportado por esta ferramenta. Tenta 'ler_ficheiro' normal."
                 

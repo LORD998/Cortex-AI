@@ -1,16 +1,16 @@
 # Cortex Dependencies
 colorama==0.4.6
 requests==2.31.0
-gTTS
 PyQt6
 keyboard
-SpeechRecognition
 sounddevice
 soundfile
+soundcard
 numpy
-playsound==1.2.2
 Pillow
-edge-tts
+faster-whisper>=1.1.0,<2
+piper-tts>=1.6.0,<2
+kokoro-onnx==0.4.7
 pyautogui
 pygetwindow
 pyperclip
@@ -19,8 +19,14 @@ matplotlib
 seaborn
 openpyxl
 beautifulsoup4
+duckduckgo-search
 playwright
 google-api-python-client
 google-auth-httplib2
 google-auth-oauthlib
 shopifyapi
+python-docx
+pypdf
+psutil
+eel
+python-dotenv

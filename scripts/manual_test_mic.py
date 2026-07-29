@@ -1,3 +1,5 @@
+"""Teste manual do microfone; grava um segundo quando executado diretamente."""
+
 import soundcard as sc
 import numpy as np
 

@@ -8,3 +8,12 @@ venv/
 temp_*/
 temp_*.wav
 temp_*.mp3
+assets/tts/*.onnx
+assets/tts/*.bin
+assets/voice_preview.wav
+
+# Images and Scratch
+*.jpg
+*.jpeg
+*.png
+scratch/

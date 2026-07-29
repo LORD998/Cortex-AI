@@ -1,3 +1,5 @@
+"""Experiência manual com as tags do antigo modo professora."""
+
 import re
 
 text = "[PT] Olá! Vamos aprender alemão. [DE] Hallo! Wie geht es dir? [PT] Responde em alemão:"

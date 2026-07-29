@@ -11,6 +11,7 @@ import subprocess
 import math
 import time
 import requests
+from core.config import CortexConfig
 from PyQt6.QtWidgets import QApplication, QWidget, QLabel
 from PyQt6.QtCore import Qt, pyqtSignal, QTimer, QPoint, QPointF
 from PyQt6.QtGui import QPainter, QColor, QPen, QRadialGradient, QBrush, QLinearGradient
@@ -29,7 +30,7 @@ from modules.business_manager import BusinessManager
 from modules.data_analysis import DataAnalysis
 from modules.email_manager import EmailManager
 from modules.web_automation import WebAutomation
-from modules.translator_manager import TranslatorManager
+from modules.local_speech import LocalSpeechRecognizer, LocalTTS
 
 class SubtitleOverlay(QWidget):
     subtitle_changed = pyqtSignal(str)
@@ -227,11 +228,45 @@ class EdgeGlowOverlay(QWidget):
 
 def preload_ollama():
     try:
-        print("⚡ A pré-aquecer o Qwen3:8B e carregar a mente na VRAM da sua RTX...")
-        requests.post("http://localhost:11434/api/generate", json={"model": "qwen3:8b", "keep_alive": -1}, timeout=120)
-        print("🚀 Cérebro Qwen3 Carregado na Placa Gráfica com sucesso!")
-    except:
-        pass
+        config = CortexConfig.from_env()
+        try:
+            requests.get(config.ollama_url, timeout=2).raise_for_status()
+        except requests.RequestException:
+            subprocess.Popen(
+                ["ollama", "serve"],
+                creationflags=subprocess.CREATE_NO_WINDOW,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            for _ in range(20):
+                time.sleep(0.5)
+                try:
+                    requests.get(config.ollama_url, timeout=1).raise_for_status()
+                    break
+                except requests.RequestException:
+                    continue
+            else:
+                raise RuntimeError("O servidor Ollama não arrancou em 10 segundos.")
+
+        print(f"[Ollama] A pré-aquecer {config.chat_model}...")
+        response = requests.post(
+            f"{config.ollama_url}/api/generate",
+            json={
+                "model": config.chat_model,
+                "prompt": "",
+                "stream": False,
+                "keep_alive": "30m",
+                "options": {
+                    "num_ctx": config.context_size,
+                    "num_batch": 512,
+                },
+            },
+            timeout=120,
+        )
+        response.raise_for_status()
+        print(f"[Ollama] Cérebro {config.chat_model} carregado com sucesso.")
+    except Exception as exc:
+        print(f"[Ollama] Não foi possível pré-aquecer o modelo: {exc}")
 
 def start_cortex():
     app = QApplication(sys.argv)
@@ -240,27 +275,11 @@ def start_cortex():
     subtitle_overlay = SubtitleOverlay()
     subtitle_overlay.show()
     
-    translator_manager = TranslatorManager(lambda text: subtitle_overlay.subtitle_changed.emit(text))
-    translator_active = False
-
-    def toggle_translator():
-        nonlocal translator_active
-        if translator_active:
-            translator_manager.stop_translating()
-            subtitle_overlay.subtitle_changed.emit("")
-        else:
-            translator_manager.start_translating()
-        translator_active = not translator_active
-
-    keyboard.add_hotkey('0', toggle_translator)
+    shared_recognizer = LocalSpeechRecognizer()
+    shared_tts = LocalTTS()
     
     print("A inicializar os Sistemas Invisíveis Orgânicos da Cortex...")
-    
-    try:
-        subprocess.Popen(["ollama", "serve"], creationflags=subprocess.CREATE_NO_WINDOW)
-    except:
-        pass
-        
+
     threading.Thread(target=preload_ollama, daemon=True).start()
     
     orchestrator = CortexOrchestrator()
@@ -289,7 +308,8 @@ def start_cortex():
     orchestrator.load_module("business_manager", business_manager)
     orchestrator.load_module("data_analysis", data_analysis)
     
-    voice_manager = VoiceManager()
+    voice_manager = VoiceManager(recognizer=shared_recognizer, tts=shared_tts)
+    threading.Thread(target=voice_manager.preload, daemon=True).start()
     is_busy = False
     teacher_mode_active = False
     teacher_language = ""
@@ -473,12 +493,11 @@ def start_cortex():
     keyboard.add_hotkey('alt', on_hotkey)
 
     print("\n" + "="*50)
-    print("CORTEX PRONTA (Modo Walkie-Talkie + Professora + Tradutor)")
+    print("CORTEX PRONTA (Modo Walkie-Talkie + Professora)")
     print("  ALT = Falar com a Cortex (solte quando terminar)")
-    print("  0 = Ligar/Desligar Tradutor em tempo real (Russo -> PT)")
     print("  Diga 'modo professora de inglês' para começar uma aula!")
-    print("• Na aula, fale livremente sem tocar em teclas.")
-    print("• Para sair da aula, diga 'sair do modo professora'.")
+    print("  Na aula, fale livremente sem tocar em teclas.")
+    print("  Para sair da aula, diga 'sair do modo professora'.")
     print("="*50 + "\n")
     
     overlay.show()

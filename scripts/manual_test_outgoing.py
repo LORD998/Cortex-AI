@@ -1,3 +1,5 @@
+"""Teste manual de áudio bidirecional; executar diretamente quando necessário."""
+
 import sounddevice as sd
 import speech_recognition as sr
 from deep_translator import GoogleTranslator

@@ -75,3 +75,27 @@ class KeyboardManager:
                 return f"Clique '{botao}' executado."
         except Exception as e:
             return f"Erro ao clicar com o rato: {str(e)}"
+
+    _MEDIA_KEYS = {
+        "play_pause": "playpause",
+        "next": "nexttrack",
+        "previous": "prevtrack",
+        "stop": "stop",
+    }
+
+    def media_key(self, action: str):
+        """Envia uma tecla multimédia do sistema (play/pause, seguinte, anterior, parar)."""
+        key = self._MEDIA_KEYS.get(action)
+        if not key:
+            return f"Ação de multimédia desconhecida: {action}"
+        try:
+            pyautogui.press(key)
+            labels = {
+                "play_pause": "Reprodução alternada (play/pause).",
+                "next": "Faixa seguinte.",
+                "previous": "Faixa anterior.",
+                "stop": "Reprodução parada.",
+            }
+            return labels[action]
+        except Exception as e:
+            return f"Erro ao enviar tecla multimédia: {str(e)}"

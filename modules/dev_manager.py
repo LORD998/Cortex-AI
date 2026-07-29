@@ -6,9 +6,10 @@ class DevManager:
     def __init__(self):
         self.name = "DevManager"
 
-    def criar_projeto_python(self, nome: str, caminho: str = "C:/Users/lordg/Desktop"):
+    def criar_projeto_python(self, nome: str, caminho: str = None):
         """Cria um projeto Python completo com ambiente virtual."""
         try:
+            caminho = caminho or os.path.join(os.path.expanduser("~"), "Desktop")
             base = os.path.join(caminho, nome)
             os.makedirs(base, exist_ok=True)
             
@@ -26,9 +27,10 @@ class DevManager:
         except Exception as e:
             return f"Erro ao criar projeto Python: {str(e)}"
 
-    def criar_projeto_web(self, nome: str, caminho: str = "C:/Users/lordg/Desktop"):
+    def criar_projeto_web(self, nome: str, caminho: str = None):
         """Cria um projeto Web básico (HTML/CSS/JS)."""
         try:
+            caminho = caminho or os.path.join(os.path.expanduser("~"), "Desktop")
             base = os.path.join(caminho, nome)
             os.makedirs(base, exist_ok=True)
             

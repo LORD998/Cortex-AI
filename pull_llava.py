@@ -1,10 +1,12 @@
 import requests
+from core.config import CortexConfig
 
 print("A iniciar o download do Córtex Visual (Llava - 4.7GB)...")
 print("Este processo está a decorrer em segundo plano. Quando terminar, a Cortex poderá ver imagens.")
 
 try:
-    response = requests.post("http://localhost:11434/api/pull", json={"name": "llava"})
+    config = CortexConfig.from_env()
+    response = requests.post(f"{config.ollama_url}/api/pull", json={"name": "llava"})
     if response.status_code == 200:
         print("✅ Download completo! O Módulo de Visão está operacional.")
     else:
