@@ -10,6 +10,7 @@ from core.orchestrator import CortexOrchestrator
 from core.tool_router import ToolRouter
 from modules.email_manager import EmailManager
 from modules.file_manager import FileManager
+from modules.local_speech import LocalTTS
 
 
 class FakeNLP:
@@ -26,6 +27,22 @@ class FakeNLP:
             }
         )
         return self.messages.pop(0)
+
+    def process_stream_with_tools(self, history, tools=None, think=False):
+        self.calls.append(
+            {
+                "history": list(history),
+                "tools": list(tools or []),
+                "think": think,
+            }
+        )
+        message = self.messages.pop(0)
+        content = message.get("content") or ""
+        if content:
+            yield {"type": "content", "content": content}
+        tool_calls = message.get("tool_calls") or []
+        if tool_calls:
+            yield {"type": "tool_calls", "calls": tool_calls}
 
 
 class FakeOSManager:
@@ -52,6 +69,7 @@ def test_config():
         max_agent_steps=4,
         max_history_messages=10,
         max_tools_per_request=18,
+        confirm_risky_actions=True,
     )
 
 
@@ -86,7 +104,7 @@ class ToolRouterTests(unittest.TestCase):
 
 
 class OrchestratorTests(unittest.TestCase):
-    def test_agent_executes_tool_then_checks_result(self):
+    def test_fast_time_intent_avoids_calling_the_llm(self):
         nlp = FakeNLP(
             [
                 {
@@ -112,12 +130,7 @@ class OrchestratorTests(unittest.TestCase):
 
         self.assertEqual(response, "Agora são 14:30.")
         self.assertEqual(os_manager.time_calls, 1)
-        self.assertEqual(len(nlp.calls), 2)
-        tool_names = {
-            schema["function"]["name"] for schema in nlp.calls[0]["tools"]
-        }
-        self.assertIn("get_current_time", tool_names)
-        self.assertLess(len(tool_names), 15)
+        self.assertEqual(nlp.calls, [])
 
     def test_email_send_waits_for_confirmation(self):
         nlp = FakeNLP(
@@ -200,6 +213,31 @@ class FileManagerTests(unittest.TestCase):
 
             self.assertIn("caminho inseguro", result)
             self.assertFalse(escaped.exists())
+
+
+class VoiceTests(unittest.TestCase):
+    def test_speech_text_removes_visual_noise(self):
+        cleaned = LocalTTS._sanitize_for_speech(
+            "**Oi**\n- veja https://example.com 😊"
+        )
+        self.assertEqual(cleaned, "Oi. veja link.")
+
+    def test_feminine_voice_blend_is_normalized(self):
+        import numpy as np
+
+        class FakeKokoro:
+            @staticmethod
+            def get_voice_style(name):
+                return {
+                    "pf_dora": np.ones((2,), dtype=np.float32),
+                    "af_heart": np.full((2,), 3.0, dtype=np.float32),
+                }[name]
+
+        voice = LocalTTS._resolve_kokoro_voice(
+            FakeKokoro(),
+            "pf_dora:0.75,af_heart:0.25",
+        )
+        np.testing.assert_allclose(voice, np.full((2,), 1.5, dtype=np.float32))
 
 
 class EmailManagerTests(unittest.TestCase):

@@ -110,3 +110,72 @@ class NLPEngine:
             return {"role": "assistant", "content": f"O Ollama recusou o pedido: {detail}"}
         except Exception as e:
             return {"role": "assistant", "content": f"Falha técnica: {str(e)}"}
+
+    def process_stream_with_tools(
+        self,
+        messages: list,
+        tools: list | None = None,
+        think: bool = False,
+    ):
+        """Envia um pedido de chat e devolve um gerador que faz yield de chunks (texto ou ferramentas)."""
+        if not self.is_available():
+            yield {"type": "content", "content": "Servidor Ollama inativo."}
+            return
+
+        temperature = 0.25 if tools else 0.4
+        max_tokens = 700 if think else (768 if tools else 1024)
+        payload = {
+            "model": self.model_name,
+            "messages": messages,
+            "stream": True,
+            "think": bool(think),
+            "keep_alive": "30m",
+            "options": {
+                "num_ctx": self.config.context_size,
+                "num_predict": max_tokens,
+                "num_batch": 512,
+                "temperature": temperature,
+                "top_p": 0.9,
+                "repeat_penalty": 1.08,
+            }
+        }
+
+        if tools:
+            payload["tools"] = tools
+
+        try:
+            response = self._session.post(
+                self.api_url,
+                json=payload,
+                stream=True,
+                timeout=self.config.request_timeout,
+            )
+            response.raise_for_status()
+            
+            for line in response.iter_lines():
+                if not line:
+                    continue
+                data = json.loads(line)
+                message = data.get("message", {})
+                
+                # Faz yield de conteúdo (se houver e não for pensar)
+                content = message.get("content")
+                if content:
+                    yield {"type": "content", "content": content}
+                
+                # Faz yield de ferramentas
+                tool_calls = message.get("tool_calls")
+                if tool_calls:
+                    # Normaliza argumentos como na versão não-stream
+                    normalized_message = self._normalize_tool_calls(message)
+                    yield {"type": "tool_calls", "calls": normalized_message.get("tool_calls", [])}
+                    
+        except requests.exceptions.Timeout:
+            yield {"type": "content", "content": "O cérebro demorou demasiado tempo a pensar."}
+        except requests.exceptions.ConnectionError:
+            self._availability_cache = False
+            self._availability_checked_at = time.monotonic()
+            yield {"type": "content", "content": "Não consigo ligar-me ao servidor Ollama."}
+        except Exception as e:
+            yield {"type": "content", "content": f"Falha técnica: {str(e)}"}
+

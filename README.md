@@ -1,121 +1,83 @@
-# Cortex AI
+<div align="center">
+  <img src="https://raw.githubusercontent.com/LORD998/cortex-ai/main/assets/cortex_preview.png" alt="Cortex AI Logo" width="300"/>
+  <h1>🌌 CORTEX AI</h1>
+  <p><strong>O Assistente Pessoal Local Definitivo. 100% Offline. Zero Latência.</strong></p>
 
-A local, privacy-first AI assistant for Windows. Powered by an Ollama brain, offline voice synthesis, computer vision, local memory, and a real tool-use agentic loop to interact with files, applications, and services.
+  <p>
+    <a href="https://github.com/LORD998/cortex-ai/stargazers"><img src="https://img.shields.io/github/stars/LORD998/cortex-ai?style=for-the-badge&color=00ff00" alt="Stars"></a>
+    <a href="https://github.com/LORD998/cortex-ai/network/members"><img src="https://img.shields.io/github/forks/LORD998/cortex-ai?style=for-the-badge&color=0055ff" alt="Forks"></a>
+    <a href="https://github.com/LORD998/cortex-ai/issues"><img src="https://img.shields.io/github/issues/LORD998/cortex-ai?style=for-the-badge&color=ff0000" alt="Issues"></a>
+    <img src="https://img.shields.io/badge/Python-3.11+-blue.svg?style=for-the-badge&logo=python&logoColor=white" alt="Python">
+    <img src="https://img.shields.io/badge/Ollama-Local_AI-black?style=for-the-badge&logo=ollama" alt="Ollama">
+  </p>
+</div>
 
-## 🚀 Overview
+---
 
-Cortex AI is built to be a truly local personal assistant. It combines cutting-edge local LLMs (like `qwen3:8b`) with a multi-step reasoning agent architecture. It can think, choose contextual tools, execute them, and verify the results—all while keeping your data strictly on your machine.
+## ⚡ O que é a CORTEX?
+A **Cortex AI** não é apenas mais um wrapper de API. É uma entidade inteligente a correr de forma **completamente nativa e offline** no teu computador. Através de um particionamento inteligente de IA (Orquestrador + Workers), a Cortex reage à tua voz em **tempo real (Latência Zero)**, conseguindo falar, ver, e executar tarefas complexas de forma autónoma. Tudo numa UI fluida e não-intrusiva.
 
-### Key Features
-- **Local Conversational AI**: Powered by `qwen3:8b` via Ollama for fast, uncensored, and private interactions.
-- **Multi-Step Agent Loop**: The assistant reasons through tasks, uses tools, checks outcomes, and iterates until the goal is achieved.
-- **Contextual Tool Routing**: Dynamically supplies only the relevant tools to the LLM out of a pool of 55+ available actions, saving context window and improving accuracy.
-- **Offline Speech-to-Text & Text-to-Speech**: Uses `faster-whisper` for incredibly fast and accurate transcription, and Kokoro/Piper for high-quality, natural-sounding offline neural voices.
-- **Computer Vision**: Leverages `qwen3-vl:8b` to see and analyze your screen.
-- **Long-term Memory**: Persists conversational context and user preferences locally in a JSON store.
-- **Real-Time Call Translation**: Auto-detects languages, translates locally, and outputs to a virtual audio cable for seamless use in Discord or Zoom.
-- **Deep System Integration**: Features tools for file management, window control, keyboard/mouse automation, and optional internet integrations (e.g., Gmail, web search).
+> *"Muito mais que código. Uma extensão orgânica do teu PC."*
 
-## 🧠 Architecture: How it Works
+---
 
-Cortex AI is structured around a modular agentic framework:
+## ✨ Features Fora do Normal
 
-1. **Input Processing**: The `voice_manager` handles continuous listening. When a user speaks, the audio is processed locally using `faster-whisper`.
-2. **Context & Routing (`tool_router.py`)**: Before hitting the main LLM, a fast lightweight intent classifier determines the context of the user's request. It selects only the necessary tools, passing them to the main orchestrator.
-3. **Reasoning Engine (`orchestrator.py`)**: 
-   - **Fast Mode**: For simple queries, it directly answers.
-   - **Deep Reasoning Mode**: For complex tasks, it enters a loop. It analyzes the problem, formulates a plan, executes a tool (like reading a file or searching the web), evaluates the tool's output, and decides if it needs to take another step.
-4. **Execution & Safeguards**: Any action that modifies the system (deleting files, sending emails, running terminal commands) is intercepted and requires explicit user confirmation.
-5. **Output Generation (`local_speech.py`)**: The generated text is passed to the local TTS engine (Kokoro or Piper) for instant, natural playback.
+### 🧠 Cérebro Local (Qwen3 8B)
+Graças ao Ollama, a Cortex pensa utilizando modelos open-source super otimizados. Raciocínio avançado e memória persistente (vetorial) sem que os teus dados alguma vez saiam do teu disco.
 
-## 🔒 Privacy & Security First
+### 🗣️ Latência Zero (Streaming Verbal)
+Esquece os "5 segundos a pensar" dos assistentes convencionais. A Cortex utiliza uma arquitetura assíncrona onde *cospe* palavras em tempo real. Enquanto ela pensa no fim da frase, o motor **Kokoro / Piper** já está a vocalizar o início da mesma! 
 
-- **100% Local Inference**: Once models are downloaded, core functions (brain, voice recognition, translation, TTS) require **no internet connection**. No audio or text is sent to the cloud.
-- **Explicit Consents**: The system will explicitly ask for permission before performing destructive or external actions (e.g., sending emails, deleting files, installing software, closing applications).
+### 👁️ Visão Computacional Orgânica
+Integração com **Qwen3-VL**. A Cortex consegue "olhar" para o teu ecrã, analisar prints e compreender imagens que lhe mostres, reagindo com contexto visual.
 
-## 🛠️ Installation & Setup
+### 🤖 Modo Autónomo (Agentic Control)
+"Assume o controlo." - A Cortex pode autonomamente pesquisar na web, organizar pastas, abrir aplicações, agendar tarefas e até interagir no WhatsApp. O Orquestrador divide-se para não bloquear a UI, informando-te por voz que *"está a tratar do pedido"*.
 
-### Prerequisites
-- Windows 10 or 11
-- Python 3.11+
-- [Ollama](https://ollama.ai/) installed locally
-- A microphone
-- (Optional but recommended) A dedicated GPU for faster inference
+### 🫧 Interface Fantasma
+Zero dor de cabeça. Zero distrações. A UI é gerida por **PyQt6** com `EdgeGlowOverlay`: Invisível quando inativa, manifesta-se através de uma "bolha" orgânica que reage à tua voz e pensamento (com efeitos Glow). Correndo em `pythonw.exe`, nem sequer tens painéis de consola a poluir o ambiente.
 
-### Setup Guide
+---
 
-1. **Clone the repository**
+## 🚀 Como Iniciar
+
+1. Instala o [Ollama](https://ollama.ai) e faz pull dos modelos base (`qwen3:8b`, `qwen3-vl:8b`).
+2. Clona este repositório:
    ```bash
-   git clone https://github.com/your-username/cortex-ai.git
+   git clone https://github.com/LORD998/cortex-ai.git
    cd cortex-ai
    ```
-
-2. **Install dependencies**
+3. Instala as dependências:
    ```bash
-   python -m pip install -r requirements.txt
+   pip install -r requirements.txt
    ```
+4. Dá vida à Cortex! (Basta executar o atalho invisível)
+   - Dá duplo clique em `start_cortex_hidden.vbs`
 
-3. **Download Local Voice Models**
-   ```bash
-   python scripts/setup_local_voice.py
-   ```
+---
 
-4. **Pull Ollama Models**
-   ```bash
-   ollama pull qwen3:8b
-   ollama pull qwen3-vl:8b
-   ```
+## 🎮 Como Usar
+- **Walkie-Talkie:** Pressiona a tecla **`ALT`** para chamares a Cortex a qualquer momento.
+- **Mãos Livres:** Grita *"Ei Cortex!"* ou *"Ei Siri!"* (Reconhecimento contínuo via Whisper).
+- **Modo Professora:** Pede *"Dá-me uma aula de Japonês"* e ela entra num ciclo de tutoria dedicado.
 
-## 💻 Usage
+---
 
-To start Cortex AI:
-```bash
-python cortex_overlay.py
-```
-*(Alternatively, use `start_cortex_hidden.vbs` to run it silently in the background.)*
+## 🛠️ Stack Tecnológica
 
-**Hotkeys & Commands:**
-- Hold `ALT` to speak, release to send the command.
-- Press `0` to toggle the real-time call translator.
-- Say *"English teacher mode"* to start an interactive learning session.
+| Componente | Tecnologia |
+| :--- | :--- |
+| **NLP & Lógica** | Ollama, Qwen3 (8B) |
+| **Visão** | Qwen3-VL (8B) |
+| **Text-to-Speech** | Kokoro / Piper Neural Voice |
+| **Speech-to-Text** | Whisper (CUDA) |
+| **Interface** | PyQt6 (Overlay sem bordas) |
+| **Automação Web** | Selenium, Playwright |
 
-## ⚙️ Configuration
+---
 
-Copy `.env.example` to `.env` to customize settings:
-
-```dotenv
-CORTEX_MODEL=qwen3:8b
-CORTEX_CONTEXT_SIZE=8192
-CORTEX_REASONING=auto
-CORTEX_WHISPER_MODEL=small
-CORTEX_TTS_ENGINE=kokoro
-CORTEX_TTS_SPEED=1.0
-```
-
-- `CORTEX_REASONING=auto`: Automatically switches to deep reasoning for multi-step tasks. Can be set to `on` or `off`.
-- `CORTEX_WHISPER_MODEL`: Change to `medium` for better multi-language recognition (requires more VRAM).
-
-## 🧪 Testing
-
-The project includes an extensive test suite. Manual tests (involving hardware like the microphone) are separated from automated logic tests.
-
-```bash
-# Run logic tests
-python -m unittest discover -s tests -v
-```
-
-## 📁 Project Structure
-```text
-core/
-  ├── config.py          # Central configuration management
-  ├── nlp_engine.py      # Ollama client & LLM interfacing
-  ├── orchestrator.py    # Main agent loop and tool execution
-  └── tool_router.py     # Contextual tool selection
-modules/
-  ├── local_speech.py    # Whisper, Piper, and Kokoro integrations
-  ├── voice_manager.py   # Microphone and audio processing
-  ├── email_manager.py   # Gmail integration with draft-first safety
-  └── ...
-tests/                 # Automated test suite
-scripts/               # Setup and manual hardware testing scripts
-```
+<div align="center">
+  <b>Criado por <a href="https://github.com/LORD998">LORD998</a></b><br>
+  <i>Porque a Inteligência Artificial deve ser rápida, privada, e incrivelmente bela.</i>
+</div>

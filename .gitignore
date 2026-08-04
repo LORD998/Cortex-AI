@@ -11,6 +11,7 @@ temp_*.mp3
 assets/tts/*.onnx
 assets/tts/*.bin
 assets/voice_preview.wav
+assets/voice_feminina_*.wav
 
 # Images and Scratch
 *.jpg

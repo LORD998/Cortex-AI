@@ -6,6 +6,7 @@ import uuid
 import keyboard
 import numpy as np
 import sounddevice as sd
+import threading
 
 from modules.local_speech import LocalSpeechRecognizer, LocalTTS, pcm_to_wav_bytes
 
@@ -109,6 +110,74 @@ class VoiceManager:
             print(f"[Professora] Falha no reconhecimento local: {exc}")
             return ""
 
+    def start_wake_word_listener(self, on_wake_word, is_busy_func):
+        """Ouve contínua e levemente em background até detetar 'Ei Siri' ou 'Ei Cortex'."""
+        self.wake_word_active = True
+        
+        def listener_thread():
+            sample_rate = 16000
+            print("[Mãos-Livres] A aguardar pela palavra mágica ('Ei Cortex' ou 'Ei Siri')...")
+            
+            # Wake words to look for
+            wake_words = [
+                "ei siri", "hey siri", "ei cortex", "hey cortex", 
+                "ouvir siri", "ouvir cortex", "i siri", "e ai siri", "e ai cortex"
+            ]
+            
+            while getattr(self, "wake_word_active", True):
+                if is_busy_func():
+                    # Se a Cortex já está a falar ou a processar, fazemos uma pausa para não se ouvir a si própria
+                    time.sleep(0.5)
+                    continue
+                    
+                try:
+                    # Grava pacotes curtos de 2 segundos para apanhar apenas a ativação
+                    recording = sd.rec(int(2.5 * sample_rate), samplerate=sample_rate, channels=1, dtype="int16")
+                    sd.wait()
+                    
+                    if not self._has_voice(recording, threshold=250):
+                        continue
+                        
+                    # Transcreve instantaneamente o pequeno pacote de áudio
+                    text = self._transcribe(recording, sample_rate, language="pt")
+                    if not text:
+                        continue
+                        
+                    text_lower = text.lower()
+                    
+                    import unicodedata
+                    import string
+                    normalized_text = unicodedata.normalize('NFKD', text_lower).encode('ASCII', 'ignore').decode('utf-8')
+                    clean_text = normalized_text.translate(str.maketrans('', '', string.punctuation))
+                    
+                    ww_detected = None
+                    for ww in wake_words:
+                        if ww in clean_text:
+                            ww_detected = ww
+                            break
+                            
+                    if ww_detected:
+                        print(f"[Mãos-Livres] Wake word '{ww_detected}' detetado!")
+                        # Avisa a UI que detetou o wake word para fazer a animação!
+                        on_wake_word("WAKE_WORD_ACTIVATED")
+                        
+                        # Agora ouve o comando real (5 segundos)
+                        cmd_recording = sd.rec(int(5 * sample_rate), samplerate=sample_rate, channels=1, dtype="int16")
+                        sd.wait()
+                        
+                        cmd_text = self._transcribe(cmd_recording, sample_rate, language="pt")
+                        if cmd_text:
+                            on_wake_word(cmd_text)
+                        else:
+                            # Se não disse nada depois, cancelamos
+                            on_wake_word("WAKE_WORD_CANCELLED")
+                        
+                except Exception as exc:
+                    print(f"[Mãos-Livres] Erro no loop: {exc}")
+                    time.sleep(1)
+
+        threading.Thread(target=listener_thread, daemon=True).start()
+
     def speak(self, text, callback=None, force_language=None):
         if not text:
             if callback:
@@ -125,6 +194,42 @@ class VoiceManager:
         finally:
             if callback:
                 callback()
+
+    def speak_stream(self, text_iterator, callback=None, force_language=None):
+        language = "pt"
+        if force_language:
+            language = self.LANGUAGE_CODES.get(force_language.casefold(), "pt")
+            
+        buffer = ""
+        full_response = ""
+        
+        try:
+            for chunk in text_iterator:
+                clean_chunk = re.sub(r"[*#`]", "", str(chunk))
+                buffer += clean_chunk
+                full_response += clean_chunk
+                
+                # Se encontrarmos pontuação forte, enviamos para falar
+                if any(p in buffer for p in [".", "!", "?", "\n", ":"]):
+                    if buffer.strip():
+                        try:
+                            self.tts.speak(buffer.strip(), language)
+                        except Exception as exc:
+                            print(f"Erro na voz local (stream): {exc}")
+                    buffer = ""
+            
+            # Fala o que sobrar no buffer
+            if buffer.strip():
+                try:
+                    self.tts.speak(buffer.strip(), language)
+                except Exception as exc:
+                    print(f"Erro na voz local (stream final): {exc}")
+                    
+        finally:
+            if callback:
+                callback()
+        
+        return full_response
 
     def generate_speech_file(self, text, language="pt"):
         """Compatibilidade com a interface Eel: cria um WAV local temporário."""

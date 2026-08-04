@@ -54,6 +54,13 @@ class CortexOrchestrator:
         },
         **{name: "memory_manager" for name in ("guardar_memoria", "aprender")},
         **{
+            name: "task_manager"
+            for name in (
+                "criar_lembrete", "listar_lembretes",
+                "concluir_lembrete", "cancelar_lembrete",
+            )
+        },
+        **{
             name: "spotify_manager"
             for name in (
                 "play_track", "pause_playback", "next_track", "current_track",
@@ -561,6 +568,66 @@ class CortexOrchestrator:
                 }
             },
             # ============================================================
+            # LEMBRETES E TAREFAS (AGENDA)
+            # ============================================================
+            {
+                "type": "function",
+                "function": {
+                    "name": "criar_lembrete",
+                    "description": "Cria um lembrete/tarefa com hora marcada. A Cortex avisa por voz quando chegar a hora. Se o utilizador der um horário relativo (ex: 'daqui a 30 minutos', 'amanhã às 9h'), usa primeiro get_current_time para calcular o valor absoluto de 'quando'.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "texto": {"type": "string", "description": "O que lembrar (ex: 'ligar ao Ricardo')."},
+                            "quando": {"type": "string", "description": "Data e hora absolutas no formato 'AAAA-MM-DD HH:MM'."}
+                        },
+                        "required": ["texto", "quando"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "listar_lembretes",
+                    "description": "Lista os lembretes/tarefas pendentes, ordenados por data.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "incluir_concluidos": {"type": "boolean", "description": "Se deve incluir lembretes já concluídos (opcional, por defeito falso)."}
+                        },
+                        "required": []
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "concluir_lembrete",
+                    "description": "Marca um lembrete/tarefa como concluído, pelo número (#) ou por parte do texto.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "referencia": {"type": "string", "description": "O número do lembrete ou parte do seu texto."}
+                        },
+                        "required": ["referencia"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "cancelar_lembrete",
+                    "description": "Apaga um lembrete/tarefa, pelo número (#) ou por parte do texto.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "referencia": {"type": "string", "description": "O número do lembrete ou parte do seu texto."}
+                        },
+                        "required": ["referencia"]
+                    }
+                }
+            },
+            # ============================================================
             # VISÃO (ANÁLISE DO ECRÃ)
             # ============================================================
             {
@@ -907,7 +974,8 @@ class CortexOrchestrator:
         return (
             "És a Cortex, assistente pessoal local no Windows. Compreende Português "
             "informal, erros ortográficos, frases incompletas e mudanças de idioma. "
-            "Responde de forma natural, clara e curta, mas usa mais detalhe quando for útil.\n"
+            "Responde em Português do Brasil natural, de forma clara e curta, mas "
+            "usa mais detalhe quando for útil. Evita construções de Português europeu.\n"
             "REGRAS:\n"
             "- Tens acesso amplo às ferramentas carregadas; escolhe e combina as necessárias para concluir o objetivo.\n"
             "- Descobre o objetivo real e usa ferramentas quando uma ação ou dado real for necessário.\n"
@@ -1060,17 +1128,20 @@ class CortexOrchestrator:
                 available.append(schema)
         return available
 
-    def process_command(self, command: str) -> str:
+    def process_command_stream(self, command: str):
         command = command.strip()
         if not command:
-            return "Não ouvi nenhum pedido."
+            yield "Não ouvi nenhum pedido."
+            return
 
         pending_response = self._handle_pending_confirmation(command)
         if pending_response is not None:
-            return pending_response
+            yield pending_response
+            return
 
         if command.casefold() in {"sair", "exit", "quit"}:
-            return "Até logo! A encerrar de forma segura."
+            yield "Até logo! A encerrar de forma segura."
+            return
 
         fast_result = try_fast_intent(command, self.modules)
         if fast_result is not None:
@@ -1081,7 +1152,8 @@ class CortexOrchestrator:
                 ]
             )
             self._trim_history()
-            return fast_result
+            yield fast_result
+            return
 
         memories = ""
         if "memory_manager" in self.modules:
@@ -1108,23 +1180,45 @@ class CortexOrchestrator:
         )
         use_reasoning = self._should_reason(command, selected_tools)
 
+        # Se houver ferramentas, o Worker trabalha no fundo enquanto a partição principal diz OK.
+        if selected_tools:
+            yield "A tratar do teu pedido..."
+
         for step in range(1, self.config.max_agent_steps + 1):
             mode_label = "raciocínio" if use_reasoning else "rápido"
-            print(
-                f"[{self.name} a pensar: passo {step}, modo {mode_label}...]",
-                end="\r",
-            )
-            message = self.nlp.process_with_tools(
+            print(f"[{self.name} a pensar: passo {step}, modo {mode_label}...]", end="\r")
+            
+            tool_calls = []
+            full_content = ""
+            
+            for chunk in self.nlp.process_stream_with_tools(
                 self.conversation_history,
                 tools=selected_tools or None,
                 think=use_reasoning,
-            )
-            tool_calls = message.get("tool_calls") or []
+            ):
+                if chunk["type"] == "content":
+                    full_content += chunk["content"]
+                    # Streaming em tempo real palavra a palavra (apenas se não houver ferramentas)
+                    if not selected_tools:
+                        yield chunk["content"]
+                elif chunk["type"] == "tool_calls":
+                    tool_calls = chunk["calls"]
+
+            message = {"role": "assistant"}
+            if full_content:
+                message["content"] = full_content
+            if tool_calls:
+                message["tool_calls"] = tool_calls
 
             if not tool_calls:
                 self.conversation_history.append(message)
                 self._trim_history()
-                return message.get("content", "Não consegui responder.")
+                if selected_tools and full_content:
+                    # Se tínhamos ferramentas mas ele decidiu falar, enviamos agora.
+                    yield full_content
+                if not full_content:
+                    yield "Não consegui responder."
+                return
 
             if self.config.confirm_risky_actions and any(
                 call.get("function", {}).get("name") in self.RISKY_TOOLS
@@ -1134,7 +1228,8 @@ class CortexOrchestrator:
                 prompt = self._confirmation_prompt(tool_calls)
                 self.conversation_history.append({"role": "assistant", "content": prompt})
                 self._trim_history()
-                return prompt
+                yield prompt
+                return
 
             self.conversation_history.append(message)
             for tool_call in tool_calls:
@@ -1142,6 +1237,7 @@ class CortexOrchestrator:
                 function_name = function.get("name", "")
                 arguments = function.get("arguments", {}) or {}
                 print(f"[{self.name} a executar: {function_name}...]", end="\r")
+                
                 try:
                     raw_result = self._execute_tool(function_name, arguments)
                 except Exception as exc:
@@ -1156,8 +1252,8 @@ class CortexOrchestrator:
                 self.conversation_history.append(
                     {
                         "role": "tool",
-                        "content": json.dumps(envelope, ensure_ascii=False),
                         "name": function_name,
+                        "content": json.dumps(envelope, ensure_ascii=False),
                     }
                 )
 
@@ -1285,6 +1381,15 @@ class CortexOrchestrator:
             return self.modules["memory_manager"].guardar_memoria(args.get("fato", ""))
         elif name == "aprender" and "memory_manager" in self.modules:
             return self.modules["memory_manager"].aprender(args.get("topico", ""), args.get("conteudo", ""))
+        # LEMBRETES E TAREFAS
+        elif name == "criar_lembrete" and "task_manager" in self.modules:
+            return self.modules["task_manager"].criar_lembrete(args.get("texto", ""), args.get("quando", ""))
+        elif name == "listar_lembretes" and "task_manager" in self.modules:
+            return self.modules["task_manager"].listar_lembretes(bool(args.get("incluir_concluidos", False)))
+        elif name == "concluir_lembrete" and "task_manager" in self.modules:
+            return self.modules["task_manager"].concluir_lembrete(args.get("referencia", ""))
+        elif name == "cancelar_lembrete" and "task_manager" in self.modules:
+            return self.modules["task_manager"].cancelar_lembrete(args.get("referencia", ""))
         # VISÃO
         elif name == "analisar_ecra" and "vision_manager" in self.modules:
             return self.modules["vision_manager"].analisar_ecra(args.get("pergunta", "Descreve o que vês."))
@@ -1331,3 +1436,7 @@ class CortexOrchestrator:
             return self.modules["os_manager"].shutdown_computer()
         else:
             return f"Ferramenta '{name}' não encontrada nos módulos carregados."
+
+    def process_command(self, command: str) -> str:
+        """Versão bloqueante que agrega o iterador (mantém compatibilidade)."""
+        return "".join(self.process_command_stream(command))

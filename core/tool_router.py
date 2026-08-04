@@ -66,9 +66,26 @@ TOOL_GROUPS = OrderedDict(
             {
                 "keywords": (
                     "lembra", "memoriza", "guarda que", "nao te esquecas",
-                    "aprende isto", "meu nome", "minha preferencia",
+                    "aprende isto", "meu nome", "minha preferencia", "eu gosto",
+                    "eu odeio", "eu detesto", "eu prefiro", "prefiro",
+                    "costumo", "eu sempre", "eu nunca", "me chamo", "chamo-me",
+                    "trabalho como", "a minha rotina", "eu sou", "eu trabalho",
                 ),
                 "tools": ("guardar_memoria", "aprender"),
+            },
+        ),
+        (
+            "tasks",
+            {
+                "keywords": (
+                    "lembrete", "lembra-me", "avisa-me", "agenda", "tarefa",
+                    "compromisso", "marca para", "nao te esquecas de me avisar",
+                    "lista de tarefas", "lista de lembretes",
+                ),
+                "tools": (
+                    "criar_lembrete", "listar_lembretes",
+                    "concluir_lembrete", "cancelar_lembrete",
+                ),
             },
         ),
         (
@@ -77,10 +94,12 @@ TOOL_GROUPS = OrderedDict(
                 "keywords": (
                     "digita", "escreve no", "teclado", "atalho", "pressiona",
                     "clica", "rato", "mouse", "ctrl+", "alt+", "arrasta",
+                    "area de transferencia", "clipboard", "copia isto", "cola isto",
                 ),
                 "tools": (
                     "digitar_texto", "pressionar_teclas", "segurar_tecla",
                     "mover_rato", "clicar_rato",
+                    "ler_area_transferencia", "escrever_area_transferencia",
                 ),
             },
         ),

@@ -1,15 +1,16 @@
 import sys
 import os
 
-# Redirecionar stdout/stderr para evitar crash do pythonw
-if sys.stdout is None:
-    sys.stdout = open(os.devnull, "w")
-if sys.stderr is None:
-    sys.stderr = open(os.devnull, "w")
+import time
+
+# Redirecionar stdout e stderr para um ficheiro log local para evitar que pythonw.exe crashe (0xc0000142)
+log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cortex_background.log")
+sys.stdout = open(log_path, "w", encoding="utf-8", buffering=1)
+sys.stderr = sys.stdout
+
 import threading
 import subprocess
 import math
-import time
 import requests
 from core.config import CortexConfig
 from PyQt6.QtWidgets import QApplication, QWidget, QLabel
@@ -31,6 +32,7 @@ from modules.data_analysis import DataAnalysis
 from modules.email_manager import EmailManager
 from modules.web_automation import WebAutomation
 from modules.local_speech import LocalSpeechRecognizer, LocalTTS
+from modules.task_manager import TaskManager
 
 class SubtitleOverlay(QWidget):
     subtitle_changed = pyqtSignal(str)
@@ -321,13 +323,15 @@ def start_cortex():
     memory_manager = MemoryManager()
     keyboard_manager = KeyboardManager()
     web_manager = WebManager()
-    
+    task_manager = TaskManager()
+
     orchestrator.load_module("file_manager", file_manager)
     orchestrator.load_module("os_manager", os_manager)
     orchestrator.load_module("vision_manager", vision_manager)
     orchestrator.load_module("memory_manager", memory_manager)
     orchestrator.load_module("keyboard_manager", keyboard_manager)
     orchestrator.load_module("web_manager", web_manager)
+    orchestrator.load_module("task_manager", task_manager)
     
     dev_manager = DevManager()
     web_automation = WebAutomation()
@@ -507,7 +511,7 @@ def start_cortex():
             return
             
         overlay.state_changed.emit("thinking")
-        response = orchestrator.process_command(text)
+        response_stream = orchestrator.process_command_stream(text)
         
         overlay.state_changed.emit("speaking")
         
@@ -516,7 +520,66 @@ def start_cortex():
             nonlocal is_busy
             is_busy = False
             
-        voice_manager.speak(response, callback=on_done)
+        voice_manager.speak_stream(response_stream, callback=on_done)
+
+    def on_wake_word_detected(text):
+        nonlocal is_busy
+        if text == "WAKE_WORD_ACTIVATED":
+            is_busy = True
+            overlay.state_changed.emit("listening")
+            return
+            
+        if text == "WAKE_WORD_CANCELLED":
+            is_busy = False
+            overlay.state_changed.emit("idle")
+            return
+            
+        if is_busy and text not in ["WAKE_WORD_ACTIVATED", "WAKE_WORD_CANCELLED"] and not teacher_mode_active:
+            # We are already busy (maybe handling the wake word command, which is fine)
+            pass
+        elif teacher_mode_active:
+            return
+            
+        is_busy = True
+        print(f"\\n[Cortex] A executar comando Mãos-Livres: {text}")
+        
+        text_lower = text.lower()
+        if any(kw in text_lower for kw in ["modo professor", "ensina-me", "ensina me", "aula de", "quero aprender", "modo professora"]):
+            idioma_detectado = "Português"
+            for chave, valor in idiomas_map.items():
+                if chave in text_lower:
+                    idioma_detectado = valor
+                    break
+            enter_teacher_mode(idioma_detectado)
+            return
+
+        auto_keywords = ["assume o controlo", "faz isso por mim", "modo autónomo", "modo autonomo"]
+        if any(kw in text_lower for kw in auto_keywords):
+            print("\\n[MODO AUTÓNOMO ATIVADO]")
+            overlay.state_changed.emit("thinking")
+            response = orchestrator.process_autonomous_goal(text)
+            overlay.state_changed.emit("speaking")
+            def on_done_auto():
+                overlay.state_changed.emit("idle")
+                nonlocal is_busy
+                is_busy = False
+            voice_manager.speak(response, callback=on_done_auto)
+            return
+
+        overlay.state_changed.emit("thinking")
+        response_stream = orchestrator.process_command_stream(text)
+        overlay.state_changed.emit("speaking")
+        def on_done():
+            overlay.state_changed.emit("idle")
+            nonlocal is_busy
+            is_busy = False
+        voice_manager.speak_stream(response_stream, callback=on_done)
+
+    def is_cortex_busy():
+        return is_busy or teacher_mode_active
+
+    # Wake word (mãos-livres) desativado temporariamente devido a latência do Whisper
+    # voice_manager.start_wake_word_listener(on_wake_word=on_wake_word_detected, is_busy_func=is_cortex_busy)
 
     def on_hotkey():
         if not is_busy:
@@ -524,12 +587,37 @@ def start_cortex():
 
     keyboard.add_hotkey('alt', on_hotkey)
 
-    print("\n" + "="*50)
-    print("CORTEX PRONTA (Modo Walkie-Talkie + Professora)")
-    print("  ALT = Falar com a Cortex (solte quando terminar)")
+    def anunciar_lembretes(vencidos):
+        nonlocal is_busy
+        overlay.state_changed.emit("speaking")
+        texto = task_manager.formatar_aviso(vencidos)
+        task_manager.marcar_notificados([item["id"] for item in vencidos])
+
+        def on_done():
+            overlay.state_changed.emit("idle")
+            nonlocal is_busy
+            is_busy = False
+
+        voice_manager.speak(texto, callback=on_done)
+
+    def check_reminders():
+        nonlocal is_busy
+        if is_busy or teacher_mode_active:
+            return
+        vencidos = task_manager.obter_vencidos()
+        if not vencidos:
+            return
+        is_busy = True
+        threading.Thread(target=anunciar_lembretes, args=(vencidos,), daemon=True).start()
+
+    reminder_timer = QTimer()
+    reminder_timer.timeout.connect(check_reminders)
+    reminder_timer.start(20000)  # verifica lembretes vencidos a cada 20s
+
+    print("\\n" + "="*50)
+    print("CORTEX PRONTA (Mãos-Livres 'Ei Cortex' + Tecla ALT)")
+    print("  Diz 'Ei Cortex' seguido do teu pedido, ou prime ALT.")
     print("  Diga 'modo professora de inglês' para começar uma aula!")
-    print("  Na aula, fale livremente sem tocar em teclas.")
-    print("  Para sair da aula, diga 'sair do modo professora'.")
     print("="*50 + "\n")
     
     overlay.show()

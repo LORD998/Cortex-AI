@@ -157,6 +157,32 @@ $speaker.Dispose()
         }
         return profiles.get(language)
 
+    @staticmethod
+    def _resolve_kokoro_voice(kokoro, voice_spec: str):
+        """Converte uma voz simples ou uma mistura ``nome:peso,nome:peso``."""
+        if "," not in voice_spec:
+            return voice_spec
+
+        import numpy as np
+
+        weighted_styles = []
+        total_weight = 0.0
+        for raw_part in voice_spec.split(","):
+            name, separator, raw_weight = raw_part.strip().partition(":")
+            if not name:
+                continue
+            weight = float(raw_weight) if separator and raw_weight else 1.0
+            if weight <= 0:
+                continue
+            weighted_styles.append(
+                np.asarray(kokoro.get_voice_style(name), dtype=np.float32) * weight
+            )
+            total_weight += weight
+
+        if not weighted_styles or total_weight <= 0:
+            raise ValueError(f"Mistura de voz inválida: {voice_spec}")
+        return np.asarray(sum(weighted_styles) / total_weight, dtype=np.float32)
+
     def _load_kokoro(self):
         if not self.model_path.is_file() or not self.voices_path.is_file():
             raise FileNotFoundError(
@@ -338,8 +364,9 @@ $speaker.Dispose()
         profile = self._voice_profile(language)
         if profile is None:
             raise ValueError(f"Kokoro não possui uma voz configurada para {language}.")
-        voice, phoneme_language = profile
+        voice_spec, phoneme_language = profile
         kokoro = self._load_kokoro()
+        voice = self._resolve_kokoro_voice(kokoro, voice_spec)
         audio_parts = []
         sample_rate = 24000
 
@@ -482,8 +509,17 @@ $speaker.Dispose()
 
     @classmethod
     def _sanitize_for_speech(cls, text: str) -> str:
-        cleaned = cls._EMOJI_RE.sub("", text)
-        return re.sub(r"[ \t]{2,}", " ", cleaned).strip()
+        cleaned = cls._EMOJI_RE.sub("", str(text or ""))
+        cleaned = re.sub(r"https?://\S+|www\.\S+", " link ", cleaned)
+        cleaned = re.sub(r"```.*?```", " ", cleaned, flags=re.DOTALL)
+        cleaned = re.sub(r"[`*_#]", "", cleaned)
+        cleaned = re.sub(r"^\s*[-•]+\s*", "", cleaned, flags=re.MULTILINE)
+        cleaned = re.sub(r"\s*\n+\s*", ". ", cleaned)
+        cleaned = cleaned.replace("&", " e ")
+        cleaned = re.sub(r"\s+", " ", cleaned).strip()
+        if cleaned and cleaned[-1] not in ".!?":
+            cleaned += "."
+        return cleaned
 
     def speak(self, text: str, language: str = "pt"):
         text = self._sanitize_for_speech(text)
