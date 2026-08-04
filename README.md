@@ -77,6 +77,17 @@ Zero dor de cabeça. Zero distrações. A UI é gerida por **PyQt6** com `EdgeGl
 
 ---
 
+## 📸 Galeria de Visão (O que a Cortex vê)
+A Cortex tem a capacidade de analisar o ecrã e compreender interfaces. Eis alguns exemplos de imagens geradas/analisadas organicamente por ela:
+
+<div align="center">
+  <img src="https://raw.githubusercontent.com/LORD998/cortex-ai/main/assets/print1.png" alt="Cortex Print 1" width="30%"/>
+  <img src="https://raw.githubusercontent.com/LORD998/cortex-ai/main/assets/print2.png" alt="Cortex Print 2" width="30%"/>
+  <img src="https://raw.githubusercontent.com/LORD998/cortex-ai/main/assets/print3.png" alt="Cortex Print 3" width="30%"/>
+</div>
+
+---
+
 <div align="center">
   <b>Criado por <a href="https://github.com/LORD998">LORD998</a></b><br>
   <i>Porque a Inteligência Artificial deve ser rápida, privada, e incrivelmente bela.</i>
