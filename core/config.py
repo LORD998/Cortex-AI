@@ -72,7 +72,7 @@ class CortexConfig:
             local_only=_env_bool("CORTEX_LOCAL_ONLY", True),
             confirm_risky_actions=_env_bool("CORTEX_CONFIRM_RISKY_ACTIONS", False),
             language=os.getenv("CORTEX_LANGUAGE", "pt-BR"),
-            whisper_model=os.getenv("CORTEX_WHISPER_MODEL", "small"),
+            whisper_model=os.getenv("CORTEX_WHISPER_MODEL", "tiny"),
             whisper_device=os.getenv("CORTEX_WHISPER_DEVICE", "auto").casefold(),
             tts_engine=os.getenv("CORTEX_TTS_ENGINE", "kokoro").casefold(),
             tts_voice_pt=os.getenv(
